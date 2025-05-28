@@ -17,3 +17,5 @@
 
 // const firstRow = await db.getFirstAsync('SELECT * FROM timeitems') as TimeItem;
 // console.log(firstRow.id, firstRow.value, firstRow.intValue);
+
+// skibidi
