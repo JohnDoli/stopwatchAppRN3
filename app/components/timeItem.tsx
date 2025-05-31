@@ -12,7 +12,7 @@ interface TimeItemProps {
 
 function TimeItem({ id, shownTime, itemName }: TimeItemProps) {
     return (
-        <Link href="/stopwatchScreen" asChild>
+        <Link href={{ pathname: "/stopwatchScreen", params: { id, itemName } }} asChild>
             <TouchableOpacity onPress={() => console.log('Item clicked', id)}>
                 <View style={styles.item}>
                     <View>

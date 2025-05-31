@@ -1,105 +1,120 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link, Stack } from 'expo-router';
-import { useState } from 'react';
-import { Text, View, StyleSheet, Pressable, Button } from 'react-native';
+import { Link, Stack, useLocalSearchParams } from 'expo-router';
+import { useState, useRef } from 'react';
+import { Text, View, StyleSheet, Pressable } from 'react-native';
+import * as SQLite from 'expo-sqlite';
 
-function HeaderStopwatchScreen() {
+const db = SQLite.openDatabaseSync('stopwatch.db');
+
+function HeaderStopwatchScreen({ itemName, id }: { itemName: string, id: number }) {
   return (
     <View style={stylesHeader.header}>
       <Link href="/" asChild>
         <Ionicons name="arrow-back" size={24} color="black" />
       </Link>
-
-      <Text style={stylesHeader.heading}>untilted</Text>
+      <Text style={stylesHeader.heading}>{itemName}</Text>
+      <Text style={stylesHeader.id}>
+        #{id}
+      </Text>
     </View>
   );
 }
 
-let elapsedTime = 0;
-let startTime = 0;
-let paused = true;
-let intervalID: NodeJS.Timeout;
-
-let secs = 0;
-let mins = 0;
-let hours = 0;
-
-
 export default function StopwatchScreen() {
+  // Get item id and name from navigation params
+  const { id, itemName = "untilted" } = useLocalSearchParams<{ id: string, itemName?: string }>();
+  const itemId = Number(id);
+
+  const [time, setTime] = useState('00:00:00');
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [paused, setPaused] = useState(true);
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastDbUpdateRef = useRef<number>(0);
+
+  function pad(unit: number) {
+    return unit.toString().padStart(2, '0');
+  }
+
+  function msToTime(ms: number) {
+    const sec = Math.floor((ms / 1000) % 60);
+    const min = Math.floor((ms / (1000 * 60)) % 60);
+    const hr = Math.floor(ms / (1000 * 60 * 60));
+    return `${pad(hr)}:${pad(min)}:${pad(sec)}`;
+  }
+
   function updateTimer() {
-    elapsedTime = Date.now() - startTime;
-  
-    secs = Math.floor(elapsedTime / 1000 % 60);
-    mins = Math.floor(elapsedTime / (1000 * 60) % 60);
-    hours = Math.floor(elapsedTime / (1000 * 60 * 60) % 60);
+    setElapsedTime(prev => {
+      const newElapsed = prev + 1000;
+      setTime(msToTime(newElapsed));
 
-    const paddedSecs = pad(secs);
-    const paddedMins = pad(mins);
-    const paddedHours = pad(hours);
-
-    setTime(`${paddedHours}:${paddedMins}:${paddedSecs}`);
-
-    function pad(unit: number) {
-      return ("0" + unit).length > 2 ? unit : "0" + unit;
-    }
+      // Save to DB every second
+      const now = Date.now();
+      if (!lastDbUpdateRef.current || now - lastDbUpdateRef.current >= 1000) {
+        if (!isNaN(itemId)) {
+          db.runAsync('UPDATE stopwatch SET timeMs = ? WHERE id = ?', [newElapsed, itemId]);
+        }
+        lastDbUpdateRef.current = now;
+      }
+      return newElapsed;
+    });
   }
 
   function startTimer() {
     if (paused) {
-      paused = false;
-      startTime = Date.now() - elapsedTime; 
-      intervalID = setInterval(updateTimer, 75);
+      setPaused(false);
+      intervalRef.current = setInterval(updateTimer, 1000);
     }
   }
-  
+
   function stopTimer() {
     if (!paused) {
-      paused = true;
-      elapsedTime = Date.now() - startTime;
-      clearInterval(intervalID);
+      setPaused(true);
+      if (intervalRef.current) clearInterval(intervalRef.current);
     }
   }
-  
+
   function resetTimer() {
-    paused = true;
-    clearInterval(intervalID);
-    elapsedTime = 0;
-    startTime = 0;
-    secs = 0;
-    mins = 0;
-    hours = 0;
+    setPaused(true);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setElapsedTime(0);
     setTime('00:00:00');
-  }
-  
-  function flagTimer() {
-    // flag current time
+    if (!isNaN(itemId)) {
+      db.runAsync('UPDATE stopwatch SET timeMs = 0 WHERE id = ?', [itemId]);
+    }
   }
 
-
-  const [time, setTime] = useState('00:00:00');
+  // Optionally, load the initial timeMs from DB on mount
+  // useEffect(() => {
+  //   if (!isNaN(itemId)) {
+  //     db.getFirstAsync<{ timeMs: number }>('SELECT timeMs FROM stopwatch WHERE id = ?', [itemId])
+  //       .then(row => {
+  //         if (row) {
+  //           setElapsedTime(row.timeMs);
+  //           setTime(msToTime(row.timeMs));
+  //         }
+  //       });
+  //   }
+  // }, [itemId]);
 
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          header: () => <HeaderStopwatchScreen />,
+          header: () => <HeaderStopwatchScreen itemName={itemName} id={itemId} />,
         }}
       />
-    
       <View style={styles.menu}>
         <Text style={styles.time}>{time}</Text>
         <View style={styles.containerButtons}>
-          <Pressable style={styles.buttonStart} onPress={() => { 
-              startTimer(); 
-              console.log('Start'); 
-            }}>
+          <Pressable style={styles.buttonStart} onPress={startTimer}>
             <Text style={styles.buttonText}>start</Text>
           </Pressable>
-          <Pressable style={styles.buttonStop} onPress={() => { 
-              stopTimer(); 
-              console.log('Stop'); 
-            }}>
+          <Pressable style={styles.buttonStop} onPress={stopTimer}>
             <Text style={styles.buttonText}>stop</Text>
+          </Pressable>
+          <Pressable style={styles.buttonStop} onPress={resetTimer}>
+            <Text style={styles.buttonText}>reset</Text>
           </Pressable>
         </View>
       </View>
@@ -189,5 +204,11 @@ const stylesHeader = StyleSheet.create({
     fontFamily: "monospace, sans-serif",
     alignContent: "center",
     userSelect: "none",
+  },
+  id: {
+    fontSize: 12,
+    fontWeight: "normal",
+    fontFamily: "monospace, sans-serif",
+    color: "#888",
   },
 });
