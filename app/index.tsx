@@ -51,6 +51,11 @@ export default function Index() {
     ).then(fetchItems);
   }
 
+  // Delete item from DB and update state
+  function deleteItem(id: number) {
+    db.runAsync('DELETE FROM stopwatch WHERE id = ?', [id]).then(fetchItems);
+  }
+
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -67,6 +72,7 @@ export default function Index() {
               id={item.id}
               shownTime={msToTime(item.timeMs)}
               itemName={item.itemName}
+              onDelete={deleteItem}
             />
           ))
         }
