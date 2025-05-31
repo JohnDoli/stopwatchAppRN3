@@ -11,10 +11,6 @@ function HeaderStopwatchScreen() {
       </Link>
 
       <Text style={stylesHeader.heading}>untilted</Text>
-
-      <Link href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target='_blank'>
-        <View style={{ width: 24 }} />
-      </Link>
     </View>
   );
 }
@@ -80,7 +76,6 @@ export default function StopwatchScreen() {
   }
 
 
-  // takzvany react hook
   const [time, setTime] = useState('00:00:00');
 
   return (
@@ -94,10 +89,16 @@ export default function StopwatchScreen() {
       <View style={styles.menu}>
         <Text style={styles.time}>{time}</Text>
         <View style={styles.containerButtons}>
-          <Pressable style={styles.buttonStart} onPress={() => { startTimer(); console.log('Start'); }}>
+          <Pressable style={styles.buttonStart} onPress={() => { 
+              startTimer(); 
+              console.log('Start'); 
+            }}>
             <Text style={styles.buttonText}>start</Text>
           </Pressable>
-          <Pressable style={styles.buttonStop} onPress={() => { stopTimer(); console.log('Stop'); }}>
+          <Pressable style={styles.buttonStop} onPress={() => { 
+              stopTimer(); 
+              console.log('Stop'); 
+            }}>
             <Text style={styles.buttonText}>stop</Text>
           </Pressable>
         </View>
