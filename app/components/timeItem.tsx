@@ -1,20 +1,25 @@
 import { Link } from "expo-router";
 import React from "react";
-import { Text, View, StyleSheet, TouchableOpacity, Pressable } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
 
 
 
 interface TimeItemProps {
+    id: number;
     shownTime: string;
+    itemName: string;
 }
 
-function TimeItem({ shownTime }: TimeItemProps) {
+function TimeItem({ id, shownTime, itemName }: TimeItemProps) {
     return (
         <Link href="/stopwatchScreen" asChild>
-            <TouchableOpacity onPress={() => console.log('Item clicked')}>
+            <TouchableOpacity onPress={() => console.log('Item clicked', id)}>
                 <View style={styles.item}>
+                    <View>
+                        <Text style={styles.itemId}>#{id}</Text>
+                        <Text style={styles.itemName}>{itemName}</Text>
+                    </View>
                     <Text style={styles.itemTime}>{shownTime}</Text>
-                    <Text style={styles.itemName}>untilted</Text>
                 </View>
             </TouchableOpacity>
         </Link>
@@ -36,6 +41,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 20,
         boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
+    },
+    itemId: {
+        fontSize: 14,
+        color: '#888',
+        fontFamily: "monospace, sans-serif",
     },
     itemName: {
         fontSize: 20,

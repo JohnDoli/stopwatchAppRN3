@@ -6,10 +6,7 @@ export default function RootLayout() {
   const createDbIfNeeded = async (db: SQLiteDatabase) => {
     console.log("Creating database if needed...");
     await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY NOT NULL, value TEXT NOT NULL, intValue INTEGER);
-    INSERT INTO test (value, intValue) VALUES ('test1', 123);
-    INSERT INTO test (value, intValue) VALUES ('test2', 456);
-    INSERT INTO test (value, intValue) VALUES ('test3', 789);
+      CREATE TABLE IF NOT EXISTS stopwatch (id INTEGER PRIMARY KEY NOT NULL, itemName TEXT NOT NULL, timeMs INTEGER);
     `);
   }
 

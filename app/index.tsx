@@ -2,9 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text, View, StyleSheet, Pressable, ScrollView } from "react-native";
 import TimeItem from './components/timeItem';
 import { Stack } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 
+const db = SQLite.openDatabaseSync('stopwatch.db');
+
+interface Item {
+  id: number;
+  itemName: string;
+  timeMs: number;
+}
 
 interface HeaderProps {
   onAddItem(): void;
@@ -16,9 +23,7 @@ function HeaderIndex({ onAddItem }: HeaderProps) {
       <Pressable onPress={() => console.log('Menu clicked')}>
         <Ionicons name="menu" size={24} color="black" />
       </Pressable>
-
       <Text style={stylesHeader.heading}>your time</Text>
-
       <Pressable onPress={() => {console.log('Plus clicked'); onAddItem();}}>
         <Ionicons name="add" size={24} color="black" />
       </Pressable>
@@ -26,15 +31,25 @@ function HeaderIndex({ onAddItem }: HeaderProps) {
   );
 }
 
-
 export default function Index() {
-  
-  const [items, setItems] = useState([{ shownTime: '00:00:00' }]);
+  const [items, setItems] = useState<Item[]>([]);
 
-
-  function addItem() {
-    setItems(prevItems => [...prevItems, { shownTime: '00:00:00' }]);
+  // Fetch items from DB
+  const fetchItems = () => {
+    db.getAllAsync<Item>('SELECT * FROM stopwatch ORDER BY id ASC').then(setItems);
   };
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  // Add item to DB
+  function addItem() {
+    db.runAsync(
+      'INSERT INTO stopwatch (itemName, timeMs) VALUES (?, ?)',
+      ['untilted', 0]
+    ).then(fetchItems);
+  }
 
   return (
     <View style={styles.container}>
@@ -44,17 +59,30 @@ export default function Index() {
         }}
       />
       <ScrollView style={styles.itemsWrapper}>
-        <View style={{ height: 40, }}></View>
+        <View style={{ height: 40 }} />
         {
-          items.map((item, index) => {
-            return <TimeItem key={index} shownTime={item.shownTime} />
-          })
+          items.map((item) => (
+            <TimeItem
+              key={item.id}
+              id={item.id}
+              shownTime={msToTime(item.timeMs)}
+              itemName={item.itemName}
+            />
+          ))
         }
       </ScrollView>
     </View>
   );
 }
 
+// Helper to convert ms to hh:mm:ss
+function msToTime(ms: number) {
+  const sec = Math.floor((ms / 1000) % 60);
+  const min = Math.floor((ms / (1000 * 60)) % 60);
+  const hr = Math.floor(ms / (1000 * 60 * 60));
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(hr)}:${pad(min)}:${pad(sec)}`;
+}
 
 const styles = StyleSheet.create({
   container: {
