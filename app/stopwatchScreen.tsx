@@ -1,22 +1,59 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
-import { Text, View, StyleSheet, Pressable } from 'react-native';
+import { Text, View, StyleSheet, Pressable, TextInput, Keyboard } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { useTimerContext } from "./timerContext";
 
 const db = SQLite.openDatabaseSync('stopwatch.db');
 
-function HeaderStopwatchScreen({ itemName, id }: { itemName: string, id: number }) {
+function HeaderStopwatchScreen({ itemName, id, onRename }: { itemName: string, id: number, onRename: (name: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(itemName);
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    setName(itemName);
+  }, [itemName]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editing]);
+
+  const handleSubmit = () => {
+    setEditing(false);
+    if (name.trim() && name !== itemName) {
+      onRename(name.trim());
+    }
+    Keyboard.dismiss();
+  };
+
   return (
     <View style={stylesHeader.header}>
       <Link href="/" asChild>
         <Ionicons name="arrow-back" size={24} color="black" />
       </Link>
-      <Text style={stylesHeader.heading}>{itemName}</Text>
-      <Text style={stylesHeader.id}>
-        #{id}
-      </Text>
+      {editing ? (
+        <TextInput
+          ref={inputRef}
+          value={name}
+          onChangeText={setName}
+          onBlur={handleSubmit}
+          onSubmitEditing={handleSubmit}
+          style={[stylesHeader.heading, { minWidth: 100, backgroundColor: "#eee", borderRadius: 6, paddingHorizontal: 8 }]}
+          maxLength={32}
+        />
+      ) : (
+        <Text
+          style={stylesHeader.heading}
+          onPress={() => setEditing(true)}
+        >
+          {itemName}
+        </Text>
+      )}
+      <Text style={stylesHeader.id}>#{id}</Text>
     </View>
   );
 }
@@ -28,6 +65,7 @@ export default function StopwatchScreen() {
   const [time, setTime] = useState('00:00:00');
   const [elapsedTime, setElapsedTime] = useState(0);
   const [paused, setPaused] = useState(true);
+  const [currentName, setCurrentName] = useState(itemName);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastDbUpdateRef = useRef<number>(0);
@@ -152,11 +190,32 @@ export default function StopwatchScreen() {
     };
   }, [itemId, runningTimerId, anyRunning]);
 
+  // Fetch name from DB if changed elsewhere
+  useEffect(() => {
+    const fetchName = async () => {
+      if (!isNaN(itemId)) {
+        const row = await db.getFirstAsync<{ itemName: string }>(
+          'SELECT itemName FROM stopwatch WHERE id = ?',
+          [itemId]
+        );
+        if (row && row.itemName !== currentName) setCurrentName(row.itemName);
+      }
+    };
+    fetchName();
+  }, [itemId]);
+
+  const handleRename = async (newName: string) => {
+    if (!isNaN(itemId)) {
+      await db.runAsync('UPDATE stopwatch SET itemName = ? WHERE id = ?', [newName, itemId]);
+      setCurrentName(newName);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          header: () => <HeaderStopwatchScreen itemName={itemName} id={itemId} />,
+          header: () => <HeaderStopwatchScreen itemName={currentName} id={itemId} onRename={handleRename} />,
         }}
       />
       <View style={styles.menu}>
