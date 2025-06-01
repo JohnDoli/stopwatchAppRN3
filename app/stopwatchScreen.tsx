@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Text, View, StyleSheet, Pressable } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 
@@ -84,18 +84,35 @@ export default function StopwatchScreen() {
     }
   }
 
-  // Optionally, load the initial timeMs from DB on mount
-  // useEffect(() => {
-  //   if (!isNaN(itemId)) {
-  //     db.getFirstAsync<{ timeMs: number }>('SELECT timeMs FROM stopwatch WHERE id = ?', [itemId])
-  //       .then(row => {
-  //         if (row) {
-  //           setElapsedTime(row.timeMs);
-  //           setTime(msToTime(row.timeMs));
-  //         }
-  //       });
-  //   }
-  // }, [itemId]);
+  // Fetch and update time from DB every second (when paused)
+  useEffect(() => {
+    let dbInterval: NodeJS.Timeout | null = null;
+
+    const fetchTime = async () => {
+      if (!isNaN(itemId)) {
+        const row = await db.getFirstAsync<{ timeMs: number }>(
+          'SELECT timeMs FROM stopwatch WHERE id = ?',
+          [itemId]
+        );
+        if (row) {
+          setElapsedTime(row.timeMs);
+          setTime(msToTime(row.timeMs));
+        }
+      }
+    };
+
+    // Always fetch once on mount or id change
+    fetchTime();
+
+    // If paused, poll DB every second to keep UI in sync with DB
+    if (paused) {
+      dbInterval = setInterval(fetchTime, 1000);
+    }
+
+    return () => {
+      if (dbInterval) clearInterval(dbInterval);
+    };
+  }, [itemId, paused]);
 
   return (
     <View style={styles.container}>

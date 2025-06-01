@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
 import React from "react";
 import { Text, View, StyleSheet, TouchableOpacity, Animated, PanResponder } from "react-native";
+import * as SQLite from 'expo-sqlite';
 
 interface TimeItemProps {
     id: number;
@@ -10,6 +11,8 @@ interface TimeItemProps {
 }
 
 function TimeItem({ id, shownTime, itemName, onDelete }: TimeItemProps) {
+    const db = SQLite.openDatabaseSync('stopwatch.db');
+    const [dbTime, setDbTime] = React.useState(shownTime);
     const translateX = React.useRef(new Animated.Value(0)).current;
     const panResponder = React.useRef(
         PanResponder.create({
@@ -21,14 +24,12 @@ function TimeItem({ id, shownTime, itemName, onDelete }: TimeItemProps) {
             },
             onPanResponderRelease: (_, gestureState) => {
                 if (gestureState.dx < -100) {
-                    // Swiped left enough, trigger delete
                     Animated.timing(translateX, {
                         toValue: -500,
                         duration: 200,
                         useNativeDriver: true,
                     }).start(() => onDelete(id));
                 } else {
-                    // Not enough, snap back
                     Animated.spring(translateX, {
                         toValue: 0,
                         useNativeDriver: true,
@@ -44,6 +45,35 @@ function TimeItem({ id, shownTime, itemName, onDelete }: TimeItemProps) {
         })
     ).current;
 
+    // Helper to convert ms to hh:mm:ss
+    function msToTime(ms: number) {
+        const sec = Math.floor((ms / 1000) % 60);
+        const min = Math.floor((ms / (1000 * 60)) % 60);
+        const hr = Math.floor(ms / (1000 * 60 * 60));
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${pad(hr)}:${pad(min)}:${pad(sec)}`;
+    }
+
+    // Poll the DB for the latest timeMs every second
+    React.useEffect(() => {
+        let interval: NodeJS.Timeout | null = null;
+
+        const fetchTime = async () => {
+            const row = await db.getFirstAsync<{ timeMs: number }>(
+                'SELECT timeMs FROM stopwatch WHERE id = ?',
+                [id]
+            );
+            if (row) setDbTime(msToTime(row.timeMs));
+        };
+
+        fetchTime(); // initial fetch
+        interval = setInterval(fetchTime, 1000);
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [id]);
+
     return (
         <Animated.View
             style={[styles.item, { transform: [{ translateX }] }]}
@@ -56,7 +86,7 @@ function TimeItem({ id, shownTime, itemName, onDelete }: TimeItemProps) {
                             <Text style={styles.itemId}>#{id}</Text>
                             <Text style={styles.itemName}>{itemName}</Text>
                         </View>
-                        <Text style={styles.itemTime}>{shownTime}</Text>
+                        <Text style={styles.itemTime}>{dbTime}</Text>
                     </View>
                 </TouchableOpacity>
             </Link>
