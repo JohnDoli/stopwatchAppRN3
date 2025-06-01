@@ -34,9 +34,8 @@ function HeaderIndex({ onAddItem }: HeaderProps) {
 
 export default function Index() {
   const [items, setItems] = useState<Item[]>([]);
-  const { anyRunning } = useTimerContext();
+  const { anyRunning, runningTimerId } = useTimerContext();
 
-  // Fetch items from DB
   const fetchItems = () => {
     db.getAllAsync<Item>('SELECT * FROM stopwatch ORDER BY id ASC').then(setItems);
   };
@@ -45,7 +44,6 @@ export default function Index() {
     fetchItems();
   }, []);
 
-  // Add item to DB
   function addItem() {
     db.runAsync(
       'INSERT INTO stopwatch (itemName, timeMs) VALUES (?, ?)',
@@ -53,7 +51,6 @@ export default function Index() {
     ).then(fetchItems);
   }
 
-  // Delete item from DB and update state
   function deleteItem(id: number) {
     db.runAsync('DELETE FROM stopwatch WHERE id = ?', [id]).then(fetchItems);
   }
@@ -75,7 +72,7 @@ export default function Index() {
               shownTime={msToTime(item.timeMs)}
               itemName={item.itemName}
               onDelete={deleteItem}
-              disabled={anyRunning} // disables all when any timer is running
+              disabled={anyRunning && runningTimerId !== item.id}
             />
           ))
         }
@@ -84,7 +81,6 @@ export default function Index() {
   );
 }
 
-// Helper to convert ms to hh:mm:ss
 function msToTime(ms: number) {
   const sec = Math.floor((ms / 1000) % 60);
   const min = Math.floor((ms / (1000 * 60)) % 60);

@@ -22,7 +22,6 @@ function HeaderStopwatchScreen({ itemName, id }: { itemName: string, id: number 
 }
 
 export default function StopwatchScreen() {
-  // Get item id and name from navigation params
   const { id, itemName = "untilted" } = useLocalSearchParams<{ id: string, itemName?: string }>();
   const itemId = Number(id);
 
@@ -32,8 +31,8 @@ export default function StopwatchScreen() {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastDbUpdateRef = useRef<number>(0);
-  const globalTimerRunningRef = useRef(false); // <-- Add this line
-  const { anyRunning, setAnyRunning } = useTimerContext();
+  const globalTimerRunningRef = useRef(false); 
+  const { anyRunning, setAnyRunning, runningTimerId, setRunningTimerId } = useTimerContext();
 
   function pad(unit: number) {
     return unit.toString().padStart(2, '0');
@@ -64,41 +63,49 @@ export default function StopwatchScreen() {
   }
 
   function startTimer() {
-    if (paused && !globalTimerRunningRef.current && !anyRunning) { // <-- use ref
+    if (paused && !globalTimerRunningRef.current && !anyRunning) {
       setPaused(false);
       intervalRef.current = setInterval(updateTimer, 1000);
-      globalTimerRunningRef.current = true; // <-- use ref
+      globalTimerRunningRef.current = true;
       setAnyRunning(true);
+      setRunningTimerId(itemId);
     }
   }
 
   function stopTimer() {
     if (!paused) {
       setPaused(true);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      globalTimerRunningRef.current = false; // <-- use ref
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      globalTimerRunningRef.current = false;
       setAnyRunning(false);
+      setRunningTimerId(null);
     }
   }
 
   function resetTimer() {
     setPaused(true);
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     setElapsedTime(0);
     setTime('00:00:00');
     if (!isNaN(itemId)) {
       db.runAsync('UPDATE stopwatch SET timeMs = 0 WHERE id = ?', [itemId]);
     }
-    globalTimerRunningRef.current = false; // <-- use ref
+    globalTimerRunningRef.current = false;
     setAnyRunning(false);
+    setRunningTimerId(null);
   }
 
-  // Fetch and update time from DB every second (when paused)
   useEffect(() => {
     let dbInterval: NodeJS.Timeout | null = null;
 
     const fetchTime = async () => {
-      if (!isNaN(itemId)) {
+      if (!isNaN(itemId) && paused) {
         const row = await db.getFirstAsync<{ timeMs: number }>(
           'SELECT timeMs FROM stopwatch WHERE id = ?',
           [itemId]
@@ -110,10 +117,8 @@ export default function StopwatchScreen() {
       }
     };
 
-    // Always fetch once on mount or id change
     fetchTime();
 
-    // If paused, poll DB every second to keep UI in sync with DB
     if (paused) {
       dbInterval = setInterval(fetchTime, 1000);
     }
@@ -122,6 +127,30 @@ export default function StopwatchScreen() {
       if (dbInterval) clearInterval(dbInterval);
     };
   }, [itemId, paused]);
+
+  useEffect(() => {
+    if (runningTimerId === itemId && anyRunning) {
+      setPaused(false);
+      if (!intervalRef.current) {
+        intervalRef.current = setInterval(updateTimer, 1000);
+        globalTimerRunningRef.current = true;
+      }
+    } else {
+      setPaused(true);
+      globalTimerRunningRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [itemId, runningTimerId, anyRunning]);
 
   return (
     <View style={styles.container}>
@@ -169,13 +198,11 @@ const styles = StyleSheet.create({
     color: '#000',
     fontFamily: 'monospace, sans-serif',
     fontSize: 48,
-    // backgroundColor: '#666',
     textShadowColor: 'rgba(0, 0, 0, 0.25)',
     textShadowOffset: {width: 2, height: 2},
     textShadowRadius: 8
   },
   containerButtons: {
-    // backgroundColor: '#ddd',
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-around',

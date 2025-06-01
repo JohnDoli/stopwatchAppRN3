@@ -46,7 +46,6 @@ function TimeItem({ id, shownTime, itemName, onDelete, disabled }: TimeItemProps
         })
     ).current;
 
-    // Helper to convert ms to hh:mm:ss
     function msToTime(ms: number) {
         const sec = Math.floor((ms / 1000) % 60);
         const min = Math.floor((ms / (1000 * 60)) % 60);
@@ -55,7 +54,6 @@ function TimeItem({ id, shownTime, itemName, onDelete, disabled }: TimeItemProps
         return `${pad(hr)}:${pad(min)}:${pad(sec)}`;
     }
 
-    // Poll the DB for the latest timeMs every second
     React.useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
 
@@ -67,7 +65,7 @@ function TimeItem({ id, shownTime, itemName, onDelete, disabled }: TimeItemProps
             if (row) setDbTime(msToTime(row.timeMs));
         };
 
-        fetchTime(); // initial fetch
+        fetchTime();
         interval = setInterval(fetchTime, 1000);
 
         return () => {
