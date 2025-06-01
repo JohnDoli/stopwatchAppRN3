@@ -3,6 +3,7 @@ import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
 import { Text, View, StyleSheet, Pressable } from 'react-native';
 import * as SQLite from 'expo-sqlite';
+import { useTimerContext } from "./timerContext";
 
 const db = SQLite.openDatabaseSync('stopwatch.db');
 
@@ -31,6 +32,8 @@ export default function StopwatchScreen() {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastDbUpdateRef = useRef<number>(0);
+  const globalTimerRunningRef = useRef(false); // <-- Add this line
+  const { anyRunning, setAnyRunning } = useTimerContext();
 
   function pad(unit: number) {
     return unit.toString().padStart(2, '0');
@@ -61,9 +64,11 @@ export default function StopwatchScreen() {
   }
 
   function startTimer() {
-    if (paused) {
+    if (paused && !globalTimerRunningRef.current && !anyRunning) { // <-- use ref
       setPaused(false);
       intervalRef.current = setInterval(updateTimer, 1000);
+      globalTimerRunningRef.current = true; // <-- use ref
+      setAnyRunning(true);
     }
   }
 
@@ -71,6 +76,8 @@ export default function StopwatchScreen() {
     if (!paused) {
       setPaused(true);
       if (intervalRef.current) clearInterval(intervalRef.current);
+      globalTimerRunningRef.current = false; // <-- use ref
+      setAnyRunning(false);
     }
   }
 
@@ -82,6 +89,8 @@ export default function StopwatchScreen() {
     if (!isNaN(itemId)) {
       db.runAsync('UPDATE stopwatch SET timeMs = 0 WHERE id = ?', [itemId]);
     }
+    globalTimerRunningRef.current = false; // <-- use ref
+    setAnyRunning(false);
   }
 
   // Fetch and update time from DB every second (when paused)

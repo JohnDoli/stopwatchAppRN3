@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { SQLiteDatabase, SQLiteProvider } from "expo-sqlite";
+import { TimerProvider } from "./timerContext";
 
 export default function RootLayout() {
 
@@ -12,10 +13,12 @@ export default function RootLayout() {
 
   return(
     <SQLiteProvider databaseName="stopwatch.db" onInit={createDbIfNeeded}>
-      <Stack>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="stopwatchScreen" />
-      </Stack>
+      <TimerProvider>
+        <Stack>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="stopwatchScreen" />
+        </Stack>
+      </TimerProvider>
     </SQLiteProvider>
   );
 }

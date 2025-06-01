@@ -8,9 +8,10 @@ interface TimeItemProps {
     shownTime: string;
     itemName: string;
     onDelete(id: number): void;
+    disabled?: boolean;
 }
 
-function TimeItem({ id, shownTime, itemName, onDelete }: TimeItemProps) {
+function TimeItem({ id, shownTime, itemName, onDelete, disabled }: TimeItemProps) {
     const db = SQLite.openDatabaseSync('stopwatch.db');
     const [dbTime, setDbTime] = React.useState(shownTime);
     const translateX = React.useRef(new Animated.Value(0)).current;
@@ -76,11 +77,21 @@ function TimeItem({ id, shownTime, itemName, onDelete }: TimeItemProps) {
 
     return (
         <Animated.View
-            style={[styles.item, { transform: [{ translateX }] }]}
-            {...panResponder.panHandlers}
+            style={[
+                styles.item,
+                disabled && { backgroundColor: '#bbb', opacity: 0.5, borderColor: '#888', borderWidth: 2 }
+            ]}
+            {...(!disabled ? panResponder.panHandlers : {})}
         >
-            <Link href={{ pathname: "/stopwatchScreen", params: { id, itemName } }} asChild>
-                <TouchableOpacity onPress={() => console.log('Item clicked', id)}>
+            <Link
+                href={{ pathname: "/stopwatchScreen", params: { id, itemName } }}
+                asChild
+            >
+                <TouchableOpacity
+                    onPress={() => console.log('Item clicked', id)}
+                    disabled={disabled}
+                    style={{ opacity: disabled ? 0.7 : 1 }}
+                >
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: 260 }}>
                         <View>
                             <Text style={styles.itemId}>#{id}</Text>

@@ -4,6 +4,7 @@ import TimeItem from './components/timeItem';
 import { Stack } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
+import { useTimerContext } from "./timerContext";
 
 const db = SQLite.openDatabaseSync('stopwatch.db');
 
@@ -33,6 +34,7 @@ function HeaderIndex({ onAddItem }: HeaderProps) {
 
 export default function Index() {
   const [items, setItems] = useState<Item[]>([]);
+  const { anyRunning } = useTimerContext();
 
   // Fetch items from DB
   const fetchItems = () => {
@@ -73,6 +75,7 @@ export default function Index() {
               shownTime={msToTime(item.timeMs)}
               itemName={item.itemName}
               onDelete={deleteItem}
+              disabled={anyRunning} // disables all when any timer is running
             />
           ))
         }
