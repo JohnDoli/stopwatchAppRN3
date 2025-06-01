@@ -49,10 +49,10 @@ function HeaderStopwatchScreen({ itemName, id, onRename }: { itemName: string, i
               backgroundColor: "#eee", 
               borderRadius: 6, 
               paddingHorizontal: 8,
-              height: 36, // set a fixed height
-              lineHeight: 24, // match fontSize or slightly larger
-              paddingVertical: 6, // adjust as needed
-              textAlignVertical: "center", // for Android
+              height: 36,
+              lineHeight: 24, 
+              paddingVertical: 6, 
+              textAlignVertical: "center", 
             }
           ]}
           maxLength={32}
@@ -202,7 +202,6 @@ export default function StopwatchScreen() {
     };
   }, [itemId, runningTimerId, anyRunning]);
 
-  // Fetch name from DB if changed elsewhere
   useEffect(() => {
     const fetchName = async () => {
       if (!isNaN(itemId)) {
@@ -233,11 +232,11 @@ export default function StopwatchScreen() {
       <View style={styles.menu}>
         <Text style={styles.time}>{time}</Text>
         <View style={styles.containerButtons}>
-          <Pressable style={styles.buttonStart} onPress={startTimer}>
-            <Text style={styles.buttonText}>start</Text>
-          </Pressable>
-          <Pressable style={styles.buttonStop} onPress={stopTimer}>
-            <Text style={styles.buttonText}>stop</Text>
+          <Pressable
+            style={paused ? styles.buttonStart : styles.buttonStop}
+            onPress={paused ? startTimer : stopTimer}
+          >
+            <Text style={styles.buttonText}>{paused ? "start" : "stop"}</Text>
           </Pressable>
           <Pressable style={styles.buttonStop} onPress={resetTimer}>
             <Text style={styles.buttonText}>reset</Text>
