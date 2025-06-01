@@ -42,7 +42,19 @@ function HeaderStopwatchScreen({ itemName, id, onRename }: { itemName: string, i
           onChangeText={setName}
           onBlur={handleSubmit}
           onSubmitEditing={handleSubmit}
-          style={[stylesHeader.heading, { minWidth: 100, backgroundColor: "#eee", borderRadius: 6, paddingHorizontal: 8 }]}
+          style={[
+            stylesHeader.heading, 
+            { 
+              minWidth: 100, 
+              backgroundColor: "#eee", 
+              borderRadius: 6, 
+              paddingHorizontal: 8,
+              height: 36, // set a fixed height
+              lineHeight: 24, // match fontSize or slightly larger
+              paddingVertical: 6, // adjust as needed
+              textAlignVertical: "center", // for Android
+            }
+          ]}
           maxLength={32}
         />
       ) : (
