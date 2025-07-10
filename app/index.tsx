@@ -14,19 +14,15 @@ interface Item {
   timeMs: number;
 }
 
-interface HeaderProps {
-  onAddItem(): void;
-}
-
-function HeaderIndex({ onAddItem }: HeaderProps) {
+function HeaderIndex() {
   return (
     <View style={stylesHeader.header}>
-      <Pressable onPress={() => console.log('Menu clicked')}>
-        <Ionicons name="menu" size={24} color="black" />
+      <Pressable onPress={() => console.log('Settings clicked')}>
+        <Ionicons name="settings-outline" size={24} color="black" />
       </Pressable>
       <Text style={stylesHeader.heading}>your time</Text>
-      <Pressable onPress={() => {console.log('Plus clicked'); onAddItem();}}>
-        <Ionicons name="add" size={24} color="black" />
+      <Pressable onPress={() => console.log('Graph clicked')}>
+        <Ionicons name="analytics-outline" size={24} color="black" />
       </Pressable>
     </View>
   );
@@ -54,12 +50,11 @@ export default function Index() {
   function deleteItem(id: number) {
     db.runAsync('DELETE FROM stopwatch WHERE id = ?', [id]).then(fetchItems);
   }
-
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          header: () => <HeaderIndex onAddItem={addItem} />,
+          header: () => <HeaderIndex />,
         }}
       />
       <ScrollView style={styles.itemsWrapper}>
@@ -76,7 +71,11 @@ export default function Index() {
             />
           ))
         }
+        <View style={{ height: 80 }} />
       </ScrollView>
+      <Pressable style={styles.fab} onPress={addItem}>
+        <Ionicons name="add" size={24} color="white" />
+      </Pressable>
     </View>
   );
 }
@@ -99,6 +98,24 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
     maxWidth: 600,
+  },  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#7f857e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.27,
+    shadowRadius: 4.65,
   },
 });
 
