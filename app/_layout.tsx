@@ -17,6 +17,13 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="index" />
           <Stack.Screen name="stopwatchScreen" />
+          <Stack.Screen 
+            name="analyticsScreen" 
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_right',
+            }}
+          />
         </Stack>
       </TimerProvider>
     </SQLiteProvider>

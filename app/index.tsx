@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View, StyleSheet, Pressable, ScrollView } from "react-native";
 import TimeItem from './components/timeItem';
-import { Stack } from 'expo-router';
+import { Stack, Link } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { useTimerContext } from "./timerContext";
@@ -21,9 +21,11 @@ function HeaderIndex() {
         <Ionicons name="settings-outline" size={24} color="black" />
       </Pressable>
       <Text style={stylesHeader.heading}>your time</Text>
-      <Pressable onPress={() => console.log('Graph clicked')}>
-        <Ionicons name="analytics-outline" size={24} color="black" />
-      </Pressable>
+      <Link href="/analyticsScreen" asChild>
+        <Pressable onPress={() => console.log('Graph clicked')}>
+          <Ionicons name="analytics-outline" size={24} color="black" />
+        </Pressable>
+      </Link>
     </View>
   );
 }
